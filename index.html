@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Score Tracker</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    color:white;
+    padding:20px;
+}
+
+.card{
+    width:100%;
+    max-width:800px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(12px);
+    border-radius:25px;
+    padding:30px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    text-align:center;
+    color:#cbd5e1;
+    margin-bottom:25px;
+}
+
+.score{
+    text-align:center;
+    font-size:70px;
+    font-weight:bold;
+    margin-bottom:25px;
+}
+
+.settings{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.settings div{
+    display:flex;
+    flex-direction:column;
+}
+
+.settings label{
+    margin-bottom:8px;
+    font-size:14px;
+}
+
+.settings input{
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+}
+
+.boxes{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+
+.btn{
+    height:180px;
+    border:none;
+    border-radius:20px;
+    color:white;
+    font-size:40px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.btn:hover{
+    transform:scale(1.03);
+}
+
+.green{
+    background:linear-gradient(135deg,#22c55e,#15803d);
+}
+
+.red{
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+}
+
+.stats{
+    display:flex;
+    justify-content:space-between;
+    margin-top:25px;
+    font-size:18px;
+}
+
+.actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    margin-top:20px;
+}
+
+button.action{
+    padding:15px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+}
+
+.reset{
+    background:#e2e8f0;
+}
+
+.undo{
+    background:#facc15;
+}
+
+@media(max-width:600px){
+    .boxes,
+    .settings,
+    .actions{
+        grid-template-columns:1fr;
+    }
+
+    .score{
+        font-size:50px;
+    }
+
+    .btn{
+        height:120px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <h1>📊 Pro Score Tracker</h1>
+    <p class="subtitle">Customize values and track your score</p>
+
+    <div class="score" id="score">0.00</div>
+
+    <div class="settings">
+
+        <div>
+            <label>Green Button Value (+)</label>
+            <input type="number" id="greenValue" value="1" step="0.01">
+        </div>
+
+        <div>
+            <label>Red Button Value (-)</label>
+            <input type="number" id="redValue" value="0.25" step="0.01">
+        </div>
+
+    </div>
+
+    <div class="boxes">
+        <button class="btn green" onclick="addScore()">+</button>
+        <button class="btn red" onclick="subtractScore()">−</button>
+    </div>
+
+    <div class="stats">
+        <div>🟢 Clicks: <b id="greenCount">0</b></div>
+        <div>🔴 Clicks: <b id="redCount">0</b></div>
+    </div>
+
+    <div class="actions">
+        <button class="action undo" onclick="undoLast()">Undo Last</button>
+        <button class="action reset" onclick="resetScore()">Reset</button>
+    </div>
+
+</div>
+
+<script>
+
+let score = 0;
+let greenClicks = 0;
+let redClicks = 0;
+let history = [];
+
+function saveSettings(){
+    localStorage.setItem("greenValue", document.getElementById("greenValue").value);
+    localStorage.setItem("redValue", document.getElementById("redValue").value);
+}
+
+function loadSettings(){
+    if(localStorage.getItem("greenValue")){
+        document.getElementById("greenValue").value =
+        localStorage.getItem("greenValue");
+    }
+
+    if(localStorage.getItem("redValue")){
+        document.getElementById("redValue").value =
+        localStorage.getItem("redValue");
+    }
+}
+
+function updateUI(){
+    document.getElementById("score").innerText =
+    score.toFixed(2);
+
+    document.getElementById("greenCount").innerText =
+    greenClicks;
+
+    document.getElementById("redCount").innerText =
+    redClicks;
+
+    saveSettings();
+}
+
+function addScore(){
+
+    let value =
+    parseFloat(document.getElementById("greenValue").value) || 0;
+
+    score += value;
+    greenClicks++;
+
+    history.push({
+        type:"green",
+        value:value
+    });
+
+    updateUI();
+}
+
+function subtractScore(){
+
+    let value =
+    parseFloat(document.getElementById("redValue").value) || 0;
+
+    score -= value;
+    redClicks++;
+
+    history.push({
+        type:"red",
+        value:value
+    });
+
+    updateUI();
+}
+
+function undoLast(){
+
+    if(history.length === 0){
+        return;
+    }
+
+    let last = history.pop();
+
+    if(last.type === "green"){
+        score -= last.value;
+        greenClicks--;
+    }
+    else{
+        score += last.value;
+        redClicks--;
+    }
+
+    updateUI();
+}
+
+function resetScore(){
+
+    if(confirm("Reset all data?")){
+
+        score = 0;
+        greenClicks = 0;
+        redClicks = 0;
+        history = [];
+
+        updateUI();
+    }
+}
+
+loadSettings();
+updateUI();
+
+</script>
+
+</body>
+</html>
